@@ -38,6 +38,10 @@ export interface UserPackage {
   expires_at: string | null;
   daily_reward: number;
   mining_speed: string;
+  mining_active: boolean;
+  mining_started_at: string | null;
+  mining_accumulated: number;
+  last_claim_at: string | null;
   created_at: string;
   package?: Package;
 }

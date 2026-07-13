@@ -27,6 +27,35 @@ export function AdminWithdrawalsPage() {
 
   const handleAction = async (w: Withdrawal, status: 'approved' | 'rejected') => {
     setActionLoading(true);
+
+    if (status === 'approved') {
+      const { data: prof, error: profError } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('id', w.user_id)
+        .maybeSingle();
+      if (profError || !prof) {
+        setActionLoading(false);
+        toast('error', 'Could not load user wallet: ' + (profError?.message ?? 'not found'));
+        return;
+      }
+      const currentBalance = prof.wallet_balance ?? 0;
+      if (currentBalance < w.amount) {
+        setActionLoading(false);
+        toast('error', `Insufficient balance. User has ${formatFull(currentBalance)} CRS but requested ${formatFull(w.amount)} CRS.`);
+        return;
+      }
+      const { error: deductError } = await supabase
+        .from('profiles')
+        .update({ wallet_balance: currentBalance - w.amount })
+        .eq('id', w.user_id);
+      if (deductError) {
+        setActionLoading(false);
+        toast('error', 'Failed to deduct balance: ' + deductError.message);
+        return;
+      }
+    }
+
     const { error } = await supabase.from('withdrawals').update({
       status, admin_note: note || null,
     }).eq('id', w.id);

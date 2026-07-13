@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { formatNumber, formatFull, formatUsd } from '../../lib/utils';
 import { FreeMiningCard } from '../../components/mining/FreeMiningCard';
+import { PaidMiningCard } from '../../components/mining/PaidMiningCard';
 import { PaymentModal } from './PaymentModal';
 import { PinActivationModal } from './PinActivationModal';
 import type { Package } from '../../lib/types';
@@ -64,6 +65,18 @@ export function MiningPage() {
 
         {/* Free mining */}
         <FreeMiningCard settings={settings} />
+
+        {/* Active package mining */}
+        {userPackages.filter((up) => up.status === 'active').length > 0 && (
+          <div>
+            <h2 className="text-xl font-bold text-white mb-4">Your Active Mining Packages</h2>
+            <div className="grid md:grid-cols-2 gap-5">
+              {userPackages.filter((up) => up.status === 'active').map((up) => (
+                <PaidMiningCard key={up.id} userPackage={up} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Paid packages */}
         <div>
