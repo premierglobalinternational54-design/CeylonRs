@@ -46,8 +46,8 @@ export function AdminOverviewPage() {
                         <p className="text-sm font-medium text-white truncate">{p.email}</p>
                         <p className="text-xs text-muted">{p.package?.name} · {timeAgo(p.created_at)}</p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-gold-400">{formatUsd(p.amount_usdt)}</p>
+                      <div className="text-right shrink-0 ml-2">
+                        <p className="text-sm font-bold text-gold-400 font-mono break-all">{formatUsd(p.amount_usdt)}</p>
                         <Badge variant={p.status === 'approved' ? 'success' : p.status === 'pending' ? 'pending' : 'danger'}>
                           {p.status}
                         </Badge>
@@ -74,8 +74,8 @@ export function AdminOverviewPage() {
                         <p className="text-sm font-medium text-white truncate">{w.profile?.email}</p>
                         <p className="text-xs text-muted">{timeAgo(w.created_at)}</p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-brand-400">{formatFull(w.amount)} CRS</p>
+                      <div className="text-right shrink-0 ml-2">
+                        <p className="text-sm font-bold text-brand-400 font-mono break-all">{formatFull(w.amount)} CRS</p>
                         <Badge variant={w.status === 'approved' ? 'success' : w.status === 'pending' ? 'pending' : 'danger'}>
                           {w.status}
                         </Badge>

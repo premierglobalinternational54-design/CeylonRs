@@ -55,15 +55,15 @@ export function ProfilePage() {
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-bg-elevated rounded-xl p-3 text-center">
               <p className="text-xs text-muted">Balance</p>
-              <p className="text-lg font-bold text-brand-400 font-mono">{formatFull(profile.wallet_balance)}</p>
+              <p className="text-base sm:text-lg font-bold text-brand-400 font-mono break-all">{formatFull(profile.wallet_balance)}</p>
             </div>
             <div className="bg-bg-elevated rounded-xl p-3 text-center">
               <p className="text-xs text-muted">Total Mined</p>
-              <p className="text-lg font-bold text-white font-mono">{formatFull(profile.total_mined)}</p>
+              <p className="text-base sm:text-lg font-bold text-white font-mono break-all">{formatFull(profile.total_mined)}</p>
             </div>
             <div className="bg-bg-elevated rounded-xl p-3 text-center">
               <p className="text-xs text-muted">Referrals</p>
-              <p className="text-lg font-bold text-gold-400 font-mono">{formatFull(profile.referral_earnings)}</p>
+              <p className="text-base sm:text-lg font-bold text-gold-400 font-mono break-all">{formatFull(profile.referral_earnings)}</p>
             </div>
           </div>
         </Card>

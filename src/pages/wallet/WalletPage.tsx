@@ -171,8 +171,8 @@ export function WalletPage() {
                       <p className="text-xs text-muted truncate">{h.detail} · {formatDateTime(h.date)}</p>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className={classNames('text-sm font-bold font-mono', h.amount > 0 ? 'text-brand-400' : 'text-danger-400')}>
+                  <div className="text-right shrink-0 ml-2">
+                    <p className={classNames('text-sm font-bold font-mono break-all', h.amount > 0 ? 'text-brand-400' : 'text-danger-400')}>
                       {h.amount > 0 ? '+' : ''}{formatFull(h.amount)}
                     </p>
                     {h.status !== 'completed' && (
@@ -193,7 +193,7 @@ export function WalletPage() {
         <form onSubmit={handleWithdraw} className="space-y-4">
           <div className="bg-bg-elevated rounded-xl p-3 text-center">
             <p className="text-xs text-muted">Available Balance</p>
-            <p className="text-2xl font-bold text-brand-400 font-mono">{formatFull(profile?.wallet_balance ?? 0)} CRS</p>
+            <p className="text-xl sm:text-2xl font-bold text-brand-400 font-mono break-all">{formatFull(profile?.wallet_balance ?? 0)} CRS</p>
           </div>
           <Input
             label="Amount (CeylonRS)"

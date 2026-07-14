@@ -92,7 +92,7 @@ export function AdminPaymentsPage() {
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
                     <span className="flex items-center gap-1"><PkgIcon className="h-3 w-3" /> {p.package?.name}</span>
-                    <span className="font-mono text-gold-400">{formatUsd(p.amount_usdt)}</span>
+                    <span className="font-mono text-gold-400 font-bold break-all">{formatUsd(p.amount_usdt)}</span>
                     <span className="font-mono">TX: {shortHash(p.tx_hash)}</span>
                     <span>{formatDateTime(p.created_at)}</span>
                   </div>

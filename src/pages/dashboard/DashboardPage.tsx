@@ -136,16 +136,16 @@ export function DashboardPage() {
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {claims.slice(0, 8).map((c) => (
-                  <div key={c.id} className="flex items-center justify-between text-sm py-2 border-b border-border-subtle last:border-0">
-                    <div className="flex items-center gap-2">
+                  <div key={c.id} className="flex items-center justify-between gap-2 text-sm py-2 border-b border-border-subtle last:border-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className={classNames(
                         'h-2 w-2 rounded-full',
                         c.source === 'free' ? 'bg-brand-400' : 'bg-gold-400',
                       )} />
                       <span className="text-muted capitalize">{c.source}</span>
                     </div>
-                    <span className="text-white font-mono font-semibold">+{formatFull(c.amount)}</span>
-                    <span className="text-xs text-muted">{timeAgo(c.created_at)}</span>
+                    <span className="text-white font-mono font-semibold break-all text-right">+{formatFull(c.amount)}</span>
+                    <span className="text-xs text-muted shrink-0">{timeAgo(c.created_at)}</span>
                   </div>
                 ))}
               </div>

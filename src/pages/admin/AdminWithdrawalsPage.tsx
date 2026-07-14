@@ -103,7 +103,7 @@ export function AdminWithdrawalsPage() {
                     </Badge>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                    <span className="font-mono text-brand-400">{formatFull(w.amount)} CRS</span>
+                    <span className="font-mono text-brand-400 text-sm font-bold break-all">{formatFull(w.amount)} CRS</span>
                     <span className="font-mono">To: {shortAddr(w.wallet_address)}</span>
                     <span>{formatDateTime(w.created_at)}</span>
                   </div>
@@ -120,14 +120,14 @@ export function AdminWithdrawalsPage() {
       <Modal open={!!viewing} onClose={() => setViewing(null)} title="Withdrawal Review" size="md">
         {viewing && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="min-w-0">
                 <p className="label">User</p>
-                <p className="text-sm text-white">{viewing.profile?.email}</p>
+                <p className="text-sm text-white break-all">{viewing.profile?.email}</p>
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="label">Amount</p>
-                <p className="text-sm text-brand-400 font-bold font-mono">{formatFull(viewing.amount)} CRS</p>
+                <p className="text-lg text-brand-400 font-bold font-mono break-all">{formatFull(viewing.amount)} CRS</p>
               </div>
             </div>
             <div>

@@ -78,13 +78,13 @@ export function AdminUsersPage() {
                   {u.is_admin && <Badge variant="gold">Admin</Badge>}
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-bg-elevated rounded-lg p-2">
+                  <div className="bg-bg-elevated rounded-lg p-2 min-w-0">
                     <Wallet className="h-3 w-3 text-brand-400 mx-auto mb-1" />
-                    <p className="text-xs font-bold text-brand-400 font-mono">{formatFull(u.wallet_balance)}</p>
+                    <p className="text-xs font-bold text-brand-400 font-mono break-all">{formatFull(u.wallet_balance)}</p>
                   </div>
-                  <div className="bg-bg-elevated rounded-lg p-2">
+                  <div className="bg-bg-elevated rounded-lg p-2 min-w-0">
                     <Gift className="h-3 w-3 text-gold-400 mx-auto mb-1" />
-                    <p className="text-xs font-bold text-white font-mono">{formatNumber(u.referral_earnings)}</p>
+                    <p className="text-xs font-bold text-white font-mono break-all">{formatNumber(u.referral_earnings)}</p>
                   </div>
                   <div className="bg-bg-elevated rounded-lg p-2">
                     <Calendar className="h-3 w-3 text-muted mx-auto mb-1" />
