@@ -9,15 +9,22 @@ import { supabase } from '../../lib/supabase';
 import { formatFull, formatCountdown, classNames } from '../../lib/utils';
 import type { UserPackage } from '../../lib/types';
 
-export function PaidMiningCard({ userPackage }: { userPackage: UserPackage }) {
+interface PaidMiningCardProps {
+  userPackage: UserPackage;
+  onClaimed?: () => void;
+}
+
+export function PaidMiningCard({ userPackage, onClaimed }: PaidMiningCardProps) {
   const { profile, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [toggling, setToggling] = useState(false);
   const [claiming, setClaiming] = useState(false);
-  const [liveAccumulated, setLiveAccumulated] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
   const [now, setNow] = useState(Date.now());
   const saveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Local checkpoint: accumulated amount and timestamp at our last sync point.
+  const [checkpointAmount, setCheckpointAmount] = useState(0);
+  const [checkpointTime, setCheckpointTime] = useState(0);
 
   const pkg = userPackage.package;
   const dailyReward = userPackage.daily_reward || pkg?.daily_reward || 0;
@@ -25,34 +32,47 @@ export function PaidMiningCard({ userPackage }: { userPackage: UserPackage }) {
   const intervalMs = 5 * 60 * 1000;
 
   const isMining = userPackage.mining_active ?? false;
-  const startedAt = userPackage.mining_started_at ? new Date(userPackage.mining_started_at).getTime() : 0;
-  const dbAccumulated = userPackage.mining_accumulated ?? 0;
 
+  // Sync local checkpoint from DB whenever mining state or DB values change
+  useEffect(() => {
+    if (isMining && userPackage.mining_started_at) {
+      setCheckpointAmount(userPackage.mining_accumulated ?? 0);
+      setCheckpointTime(new Date(userPackage.mining_started_at).getTime());
+    } else {
+      setCheckpointAmount(0);
+      setCheckpointTime(0);
+    }
+  }, [isMining, userPackage.mining_started_at, userPackage.mining_accumulated]);
+
+  // Tick every second for live display
   useEffect(() => {
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    if (isMining && startedAt) {
-      const raw = dbAccumulated + (now - startedAt) * ratePerMs;
-      setLiveAccumulated(raw);
-      setElapsed(now - startedAt);
-    } else {
-      setLiveAccumulated(0);
-      setElapsed(0);
-    }
-  }, [isMining, startedAt, now, dbAccumulated, ratePerMs]);
+  // Compute live accumulated purely from checkpoint + elapsed time since checkpoint
+  const liveAccumulated = isMining && checkpointTime
+    ? checkpointAmount + (now - checkpointTime) * ratePerMs
+    : 0;
+  const elapsed = isMining && checkpointTime ? now - checkpointTime : 0;
 
+  // Auto-save to DB every 30 seconds. Updates both mining_accumulated and
+  // mining_started_at, then updates local checkpoint — no double-counting.
   useEffect(() => {
     if (!isMining || !profile) return;
     saveTimer.current = setInterval(async () => {
-      const raw = dbAccumulated + (Date.now() - startedAt) * ratePerMs;
-      await supabase.from('user_packages').update({ mining_accumulated: raw }).eq('id', userPackage.id);
+      const raw = checkpointAmount + (Date.now() - checkpointTime) * ratePerMs;
+      const saveTime = new Date().toISOString();
+      await supabase.from('user_packages').update({
+        mining_accumulated: raw,
+        mining_started_at: saveTime,
+      }).eq('id', userPackage.id);
+      setCheckpointAmount(raw);
+      setCheckpointTime(Date.now());
     }, 30000);
     return () => { if (saveTimer.current) clearInterval(saveTimer.current); };
-  }, [isMining, profile, startedAt, dbAccumulated, ratePerMs, userPackage.id]);
+  }, [isMining, profile, checkpointAmount, checkpointTime, ratePerMs, userPackage.id]);
 
   const progressPct = Math.min(100, (liveAccumulated / dailyReward) * 100);
 
@@ -64,33 +84,47 @@ export function PaidMiningCard({ userPackage }: { userPackage: UserPackage }) {
   const handleStart = async () => {
     if (!profile) return;
     setToggling(true);
+    const startTime = new Date().toISOString();
     const { error } = await supabase.from('user_packages').update({
       mining_active: true,
-      mining_started_at: new Date().toISOString(),
+      mining_started_at: startTime,
       mining_accumulated: 0,
     }).eq('id', userPackage.id);
     setToggling(false);
     if (error) { toast('error', 'Failed to start: ' + error.message); return; }
+    setCheckpointAmount(0);
+    setCheckpointTime(Date.now());
     await refreshProfile();
+    onClaimed?.();
     toast('success', `${pkg?.name} mining started!`);
   };
 
-  const claimAndStop = async () => {
+  const doClaim = async (stopAfter: boolean) => {
     if (!profile) return;
     const claimAmount = Math.floor(liveAccumulated);
+
     if (claimAmount <= 0) {
-      const { error } = await supabase.from('user_packages').update({
-        mining_active: false, mining_started_at: null, mining_accumulated: 0,
-      }).eq('id', userPackage.id);
-      if (error) { toast('error', error.message); return; }
-      await refreshProfile();
+      if (stopAfter) {
+        const { error } = await supabase.from('user_packages').update({
+          mining_active: false, mining_started_at: null, mining_accumulated: 0,
+        }).eq('id', userPackage.id);
+        if (error) { toast('error', error.message); return; }
+        setCheckpointAmount(0);
+        setCheckpointTime(0);
+        await refreshProfile();
+        onClaimed?.();
+      }
       return;
     }
+
+    const claimTime = new Date().toISOString();
+    const claimMs = Date.now();
+
     const { error } = await supabase.from('user_packages').update({
-      mining_active: false,
-      mining_started_at: null,
+      mining_active: !stopAfter,
+      mining_started_at: stopAfter ? null : claimTime,
       mining_accumulated: 0,
-      last_claim_at: new Date().toISOString(),
+      last_claim_at: claimTime,
     }).eq('id', userPackage.id);
     if (error) { toast('error', 'Claim failed: ' + error.message); return; }
 
@@ -101,24 +135,28 @@ export function PaidMiningCard({ userPackage }: { userPackage: UserPackage }) {
     if (profileError) { toast('error', 'Wallet update failed: ' + profileError.message); return; }
 
     const { error: claimError } = await supabase.from('claims').insert({
-      user_id: profile.id, amount: claimAmount, source: 'package',
+      user_id: profile.id, amount: claimAmount, source: 'paid',
     });
     if (claimError) { toast('error', 'Claim record failed: ' + claimError.message); return; }
 
+    // Reset checkpoint so only new points accumulate after claim
+    setCheckpointAmount(0);
+    setCheckpointTime(stopAfter ? 0 : claimMs);
     await refreshProfile();
+    onClaimed?.();
     toast('success', `Claimed ${formatFull(claimAmount)} CRS from ${pkg?.name}!`);
   };
 
   const handleStop = async () => {
     setToggling(true);
-    await claimAndStop();
+    await doClaim(true);
     setToggling(false);
   };
 
   const handleClaim = async () => {
     if (!canClaim) return;
     setClaiming(true);
-    await claimAndStop();
+    await doClaim(false);
     setClaiming(false);
   };
 

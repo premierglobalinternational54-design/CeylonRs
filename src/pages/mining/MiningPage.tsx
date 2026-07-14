@@ -72,7 +72,7 @@ export function MiningPage() {
             <h2 className="text-xl font-bold text-white mb-4">Your Active Mining Packages</h2>
             <div className="grid md:grid-cols-2 gap-5">
               {userPackages.filter((up) => up.status === 'active').map((up) => (
-                <PaidMiningCard key={up.id} userPackage={up} />
+                <PaidMiningCard key={up.id} userPackage={up} onClaimed={reload} />
               ))}
             </div>
           </div>

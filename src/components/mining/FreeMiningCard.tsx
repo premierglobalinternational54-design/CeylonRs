@@ -14,10 +14,14 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
   const { toast } = useToast();
   const [toggling, setToggling] = useState(false);
   const [claiming, setClaiming] = useState(false);
-  const [liveAccumulated, setLiveAccumulated] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
   const [now, setNow] = useState(Date.now());
   const saveTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Local checkpoint: accumulated amount and timestamp at our last sync point.
+  // Initialized from DB on profile change; updated on start, claim, and auto-save.
+  // This prevents double-counting: live value = checkpointAmount + elapsed * rate.
+  const [checkpointAmount, setCheckpointAmount] = useState(0);
+  const [checkpointTime, setCheckpointTime] = useState(0);
 
   const dailyLimit = settings?.free_mining_limit ?? 1000;
   const intervalMs = (settings?.claim_interval_minutes ?? 5) * 60 * 1000;
@@ -28,8 +32,17 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
   const remainingToday = Math.max(0, dailyLimit - freeMinedToday);
 
   const isMining = profile?.mining_active ?? false;
-  const startedAt = profile?.mining_started_at ? new Date(profile.mining_started_at).getTime() : 0;
-  const dbAccumulated = profile?.mining_accumulated ?? 0;
+
+  // Sync local checkpoint from DB whenever mining state or DB values change
+  useEffect(() => {
+    if (isMining && profile?.mining_started_at) {
+      setCheckpointAmount(profile.mining_accumulated ?? 0);
+      setCheckpointTime(new Date(profile.mining_started_at).getTime());
+    } else {
+      setCheckpointAmount(0);
+      setCheckpointTime(0);
+    }
+  }, [isMining, profile?.mining_started_at, profile?.mining_accumulated]);
 
   // Tick every second for live display
   useEffect(() => {
@@ -38,29 +51,29 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
     return () => clearInterval(id);
   }, []);
 
-  // Compute live accumulated
-  useEffect(() => {
-    if (isMining && startedAt) {
-      const raw = dbAccumulated + (now - startedAt) * ratePerMs;
-      const capped = Math.min(raw, remainingToday);
-      setLiveAccumulated(capped);
-      setElapsed(now - startedAt);
-    } else {
-      setLiveAccumulated(0);
-      setElapsed(0);
-    }
-  }, [isMining, startedAt, now, dbAccumulated, ratePerMs, remainingToday]);
+  // Compute live accumulated purely from checkpoint + elapsed time since checkpoint
+  const liveAccumulated = isMining && checkpointTime
+    ? Math.min(checkpointAmount + (now - checkpointTime) * ratePerMs, remainingToday)
+    : 0;
+  const elapsed = isMining && checkpointTime ? now - checkpointTime : 0;
 
-  // Auto-save accumulated to DB every 30 seconds while mining
+  // Auto-save to DB every 30 seconds. Updates both mining_accumulated and
+  // mining_started_at, then updates local checkpoint — no double-counting.
   useEffect(() => {
     if (!isMining || !profile) return;
     saveTimer.current = setInterval(async () => {
-      const raw = dbAccumulated + (Date.now() - startedAt) * ratePerMs;
+      const raw = checkpointAmount + (Date.now() - checkpointTime) * ratePerMs;
       const capped = Math.min(raw, remainingToday);
-      await supabase.from('profiles').update({ mining_accumulated: capped }).eq('id', profile.id);
+      const saveTime = new Date().toISOString();
+      await supabase.from('profiles').update({
+        mining_accumulated: capped,
+        mining_started_at: saveTime,
+      }).eq('id', profile.id);
+      setCheckpointAmount(capped);
+      setCheckpointTime(Date.now());
     }, 30000);
     return () => { if (saveTimer.current) clearInterval(saveTimer.current); };
-  }, [isMining, profile, startedAt, dbAccumulated, ratePerMs, remainingToday]);
+  }, [isMining, profile, checkpointAmount, checkpointTime, ratePerMs, remainingToday]);
 
   const progressPct = Math.min(100, (liveAccumulated / dailyLimit) * 100);
 
@@ -77,9 +90,10 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
       return;
     }
     setToggling(true);
+    const startTime = new Date().toISOString();
     const { error } = await supabase.from('profiles').update({
       mining_active: true,
-      mining_started_at: new Date().toISOString(),
+      mining_started_at: startTime,
       mining_accumulated: 0,
     }).eq('id', profile.id);
     setToggling(false);
@@ -87,29 +101,40 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
       toast('error', 'Failed to start mining: ' + error.message);
       return;
     }
+    setCheckpointAmount(0);
+    setCheckpointTime(Date.now());
     await refreshProfile();
     toast('success', 'Mining started! Tokens are accumulating.');
   };
 
-  const claimAndStop = async () => {
+  const doClaim = async (stopAfter: boolean) => {
     if (!profile) return;
     const claimAmount = Math.floor(liveAccumulated);
+
     if (claimAmount <= 0) {
-      const { error } = await supabase.from('profiles').update({
-        mining_active: false, mining_started_at: null, mining_accumulated: 0,
-      }).eq('id', profile.id);
-      if (error) { toast('error', error.message); return; }
-      await refreshProfile();
+      if (stopAfter) {
+        const { error } = await supabase.from('profiles').update({
+          mining_active: false, mining_started_at: null, mining_accumulated: 0,
+        }).eq('id', profile.id);
+        if (error) { toast('error', error.message); return; }
+        setCheckpointAmount(0);
+        setCheckpointTime(0);
+        await refreshProfile();
+      }
       return;
     }
+
     const newFreeToday = (profile.free_mined_date === today ? profile.free_mined_today : 0) + claimAmount;
+    const claimTime = new Date().toISOString();
+    const claimMs = Date.now();
+
     const { error } = await supabase.from('profiles').update({
-      mining_active: false,
-      mining_started_at: null,
+      mining_active: !stopAfter,
+      mining_started_at: stopAfter ? null : claimTime,
       mining_accumulated: 0,
       wallet_balance: profile.wallet_balance + claimAmount,
       total_mined: profile.total_mined + claimAmount,
-      last_claim_at: new Date().toISOString(),
+      last_claim_at: claimTime,
       free_mined_today: newFreeToday,
       free_mined_date: today,
     }).eq('id', profile.id);
@@ -124,6 +149,9 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
       toast('error', 'Claim record failed: ' + claimError.message);
       return;
     }
+    // Reset checkpoint so only new points accumulate after claim
+    setCheckpointAmount(0);
+    setCheckpointTime(stopAfter ? 0 : claimMs);
     await refreshProfile();
     toast('success', `Successfully claimed ${formatFull(claimAmount)} CRS!`);
   };
@@ -131,27 +159,25 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
   const handleStop = async () => {
     if (!profile) return;
     setToggling(true);
-    await claimAndStop();
+    await doClaim(true);
     setToggling(false);
   };
 
   const handleClaim = async () => {
     if (!canClaim || !profile) return;
     setClaiming(true);
-    await claimAndStop();
+    await doClaim(false);
     setClaiming(false);
   };
 
   return (
     <Card className="p-6 relative overflow-hidden">
-      {/* Glow effect */}
       <div className={classNames(
         'absolute top-0 right-0 h-48 w-48 rounded-full blur-[80px] transition-opacity duration-500',
         isMining ? 'bg-brand-500/20 opacity-100' : 'bg-brand-500/5 opacity-50',
       )} />
 
       <div className="relative">
-        {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className={classNames(
@@ -170,11 +196,9 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
           </Badge>
         </div>
 
-        {/* Main display */}
         <div className="bg-bg-elevated rounded-2xl p-5 mb-4">
           {isMining ? (
             <>
-              {/* Live counter */}
               <div className="text-center mb-4">
                 <p className="text-xs text-muted uppercase tracking-wide mb-1 flex items-center justify-center gap-1.5">
                   <Activity className="h-3 w-3 animate-pulse" /> Mining Now
@@ -185,7 +209,6 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
                 <p className="text-xs text-muted mt-1">CRS accumulated</p>
               </div>
 
-              {/* Progress bar — fills toward 1000 over 24h */}
               <div className="mb-3">
                 <div className="flex justify-between text-xs text-muted mb-1.5">
                   <span>Progress to daily limit</span>
@@ -208,7 +231,6 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
                 </div>
               </div>
 
-              {/* Elapsed time */}
               <div className="flex items-center justify-center gap-2 text-xs text-muted">
                 <Timer className="h-3.5 w-3.5" />
                 <span className="font-mono">Elapsed: {formatCountdown(elapsed)}</span>
@@ -217,32 +239,28 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
               </div>
             </>
           ) : (
-            <>
-              {/* Idle state */}
-              <div className="text-center py-4">
-                <div className="h-16 w-16 rounded-2xl bg-bg-base border border-border flex items-center justify-center mx-auto mb-4">
-                  <Cpu className="h-8 w-8 text-muted" />
+            <div className="text-center py-4">
+              <div className="h-16 w-16 rounded-2xl bg-bg-base border border-border flex items-center justify-center mx-auto mb-4">
+                <Cpu className="h-8 w-8 text-muted" />
+              </div>
+              <p className="text-sm text-white font-medium mb-1">Start Mining</p>
+              <p className="text-xs text-muted mb-4">
+                Press start to begin mining. Tokens accumulate automatically up to {formatFull(dailyLimit)} CRS over 24 hours.
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <div className="bg-bg-base rounded-xl p-3 border border-border">
+                  <p className="text-xs text-muted">Remaining Today</p>
+                  <p className="text-lg font-bold text-brand-400 font-mono">{formatFull(remainingToday)}</p>
                 </div>
-                <p className="text-sm text-white font-medium mb-1">Start Mining</p>
-                <p className="text-xs text-muted mb-4">
-                  Press start to begin mining. Tokens accumulate automatically up to {formatFull(dailyLimit)} CRS over 24 hours.
-                </p>
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="bg-bg-base rounded-xl p-3 border border-border">
-                    <p className="text-xs text-muted">Remaining Today</p>
-                    <p className="text-lg font-bold text-brand-400 font-mono">{formatFull(remainingToday)}</p>
-                  </div>
-                  <div className="bg-bg-base rounded-xl p-3 border border-border">
-                    <p className="text-xs text-muted">Daily Limit</p>
-                    <p className="text-lg font-bold text-white font-mono">{formatFull(dailyLimit)}</p>
-                  </div>
+                <div className="bg-bg-base rounded-xl p-3 border border-border">
+                  <p className="text-xs text-muted">Daily Limit</p>
+                  <p className="text-lg font-bold text-white font-mono">{formatFull(dailyLimit)}</p>
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
 
-        {/* Action buttons */}
         {isMining ? (
           <div className="space-y-2">
             <Button
@@ -279,7 +297,6 @@ export function FreeMiningCard({ settings }: { settings: Settings | null }) {
           </Button>
         )}
 
-        {/* Cooldown hint */}
         {isMining && !canClaim && (
           <p className="text-xs text-muted text-center mt-3">
             Wait {settings?.claim_interval_minutes ?? 5} minutes between claims
