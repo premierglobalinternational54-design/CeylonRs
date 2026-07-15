@@ -16,6 +16,7 @@ import { AdminWithdrawalsPage } from './pages/admin/AdminWithdrawalsPage';
 import { AdminPackagesPage } from './pages/admin/AdminPackagesPage';
 import { AdminPinsPage } from './pages/admin/AdminPinsPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+import { AdminAdsPage } from './pages/admin/AdminAdsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -54,6 +55,7 @@ function AppRoutes() {
       <Route path="/admin/packages" element={<AdminRoute><AdminPackagesPage /></AdminRoute>} />
       <Route path="/admin/pins" element={<AdminRoute><AdminPinsPage /></AdminRoute>} />
       <Route path="/admin/settings" element={<AdminRoute><AdminSettingsPage /></AdminRoute>} />
+      <Route path="/admin/ads" element={<AdminRoute><AdminAdsPage /></AdminRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

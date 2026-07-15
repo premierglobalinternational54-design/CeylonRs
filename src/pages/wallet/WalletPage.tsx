@@ -11,6 +11,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { formatFull, formatNumber, formatDateTime, classNames } from '../../lib/utils';
+import { AdSlot } from '../../components/AdSlot';
 import type { Claim, Withdrawal } from '../../lib/types';
 
 type HistoryItem = {
@@ -130,6 +131,8 @@ export function WalletPage() {
             icon={<ArrowDownToLine className="h-5 w-5" />} accent="danger" />
         </div>
 
+        <AdSlot position="top" />
+
         {/* History */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -214,6 +217,8 @@ export function WalletPage() {
           <Button type="submit" className="w-full" size="lg" loading={submitting}>Submit Withdrawal</Button>
         </form>
       </Modal>
+
+      <AdSlot position="bottom" />
     </div>
   );
 }

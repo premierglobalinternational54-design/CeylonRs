@@ -6,6 +6,7 @@ import {
 import { PublicNavbar, Footer } from '../../components/Navigation';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { AdSlot } from '../../components/AdSlot';
 import { formatNumber } from '../../lib/utils';
 
 const features = [
@@ -72,6 +73,8 @@ export function HomePage() {
           </div>
         </section>
 
+        <AdSlot position="top" />
+
         {/* Features */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
           <div className="text-center mb-12">
@@ -90,6 +93,8 @@ export function HomePage() {
             ))}
           </div>
         </section>
+
+        <AdSlot position="middle" />
 
         {/* How it works */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
@@ -131,6 +136,8 @@ export function HomePage() {
             </div>
           </Card>
         </section>
+
+        <AdSlot position="bottom" />
       </main>
       <Footer />
     </div>
@@ -208,6 +215,7 @@ export function PackagesPage() {
             ))}
           </div>
         </section>
+        <AdSlot position="bottom" />
       </main>
       <Footer />
     </div>
@@ -260,6 +268,7 @@ export function AboutPage() {
             </div>
           </div>
         </section>
+        <AdSlot position="bottom" />
       </main>
       <Footer />
     </div>

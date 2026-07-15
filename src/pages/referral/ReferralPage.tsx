@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { formatNumber, formatDate } from '../../lib/utils';
+import { AdSlot } from '../../components/AdSlot';
 import type { Referral } from '../../lib/types';
 
 export function ReferralPage() {
@@ -118,6 +119,8 @@ export function ReferralPage() {
           <StatCard label="Rewards" value={formatNumber(totalRewards)} sub="CRS" icon={<Gift className="h-5 w-5" />} accent="blue" />
         </div>
 
+        <AdSlot position="top" />
+
         {/* Referral list */}
         <Card className="p-6">
           <h2 className="text-lg font-bold text-white mb-4">Referred Users</h2>
@@ -148,6 +151,8 @@ export function ReferralPage() {
             </div>
           )}
         </Card>
+
+        <AdSlot position="bottom" />
       </div>
     </div>
   );

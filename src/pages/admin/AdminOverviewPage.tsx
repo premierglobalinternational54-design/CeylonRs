@@ -4,6 +4,7 @@ import { Card, StatCard } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { useAdminData } from '../../hooks/useAdminData';
 import { formatNumber, formatFull, formatUsd, timeAgo } from '../../lib/utils';
+import { AdSlot } from '../../components/AdSlot';
 
 export function AdminOverviewPage() {
   const { users, payments, withdrawals, packages, pins, loading } = useAdminData();
@@ -96,6 +97,8 @@ export function AdminOverviewPage() {
           </div>
         </>
       )}
+
+      <AdSlot position="top" />
     </AdminLayout>
   );
 }

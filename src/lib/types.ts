@@ -121,6 +121,18 @@ export interface Settings {
   updated_at: string;
 }
 
+export type AdPosition = 'top' | 'middle' | 'bottom';
+
+export interface Advertisement {
+  id: string;
+  name: string;
+  position: AdPosition;
+  ad_code: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export type ToastType = 'success' | 'error' | 'info';
 export interface Toast {
   id: string;

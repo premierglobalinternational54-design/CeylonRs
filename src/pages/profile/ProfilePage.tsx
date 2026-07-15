@@ -7,6 +7,7 @@ import { Badge } from '../../components/ui/Badge';
 import { useAuth } from '../../context/AuthContext';
 import { useMiningData } from '../../hooks/useMiningData';
 import { formatDate, formatFull } from '../../lib/utils';
+import { AdSlot } from '../../components/AdSlot';
 import { PinActivationModal } from '../mining/PinActivationModal';
 
 export function ProfilePage() {
@@ -49,6 +50,8 @@ export function ProfilePage() {
           </div>
         </Card>
 
+        <AdSlot position="top" />
+
         {/* Wallet summary */}
         <Card className="p-6 space-y-4">
           <h3 className="text-lg font-bold text-white">Wallet Summary</h3>
@@ -67,6 +70,8 @@ export function ProfilePage() {
             </div>
           </div>
         </Card>
+
+        <AdSlot position="middle" />
 
         {/* Packages */}
         <Card className="p-6 space-y-4">
@@ -106,6 +111,8 @@ export function ProfilePage() {
           )}
         </Card>
       </div>
+
+      <AdSlot position="bottom" />
 
       <PinActivationModal open={pinOpen} onClose={() => setPinOpen(false)} />
     </div>

@@ -11,6 +11,7 @@ import { supabase } from '../../lib/supabase';
 import { formatNumber, formatFull, formatUsd } from '../../lib/utils';
 import { FreeMiningCard } from '../../components/mining/FreeMiningCard';
 import { PaidMiningCard } from '../../components/mining/PaidMiningCard';
+import { AdSlot } from '../../components/AdSlot';
 import { PaymentModal } from './PaymentModal';
 import { PinActivationModal } from './PinActivationModal';
 import type { Package } from '../../lib/types';
@@ -65,6 +66,8 @@ export function MiningPage() {
 
         {/* Free mining */}
         <FreeMiningCard settings={settings} />
+
+        <AdSlot position="top" />
 
         {/* Active package mining */}
         {userPackages.filter((up) => up.status === 'active').length > 0 && (
@@ -124,10 +127,13 @@ export function MiningPage() {
             })}
           </div>
         </div>
+
+        <AdSlot position="middle" />
       </div>
 
       <PaymentModal open={!!selectedPkg} onClose={() => setSelectedPkg(null)} pkg={selectedPkg} settings={settings} />
       <PinActivationModal open={pinModalOpen} onClose={() => setPinModalOpen(false)} />
+      <AdSlot position="bottom" />
     </div>
   );
 }

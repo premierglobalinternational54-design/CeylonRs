@@ -13,6 +13,7 @@ import {
   formatNumber, formatFull, timeAgo, classNames,
 } from '../../lib/utils';
 import { FreeMiningCard } from '../../components/mining/FreeMiningCard';
+import { AdSlot } from '../../components/AdSlot';
 import { PinActivationModal } from '../mining/PinActivationModal';
 
 export function DashboardPage() {
@@ -75,7 +76,9 @@ export function DashboardPage() {
             icon={<TrendingUp className="h-5 w-5" />} accent="brand" />
         </div>
 
-        {/* Mining card + chart */}
+      <AdSlot position="top" />
+
+      {/* Mining card + chart */}
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <FreeMiningCard settings={settings} />
@@ -153,6 +156,8 @@ export function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      <AdSlot position="middle" />
 
       <PinActivationModal open={pinModalOpen} onClose={() => setPinModalOpen(false)} />
     </div>

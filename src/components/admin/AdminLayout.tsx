@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, CreditCard, ArrowDownToLine, Package, KeyRound,
-  Settings as SettingsIcon, LogOut, Menu, X, Shield,
+  Settings as SettingsIcon, LogOut, Menu, X, Shield, Megaphone,
 } from 'lucide-react';
 import { Logo } from '../Logo';
 import { useAuth } from '../../context/AuthContext';
@@ -17,6 +17,7 @@ const links = [
   { to: '/admin/packages', label: 'Packages', icon: Package },
   { to: '/admin/pins', label: 'PINs', icon: KeyRound },
   { to: '/admin/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/admin/ads', label: 'Ads', icon: Megaphone },
 ];
 
 export function AdminLayout({ children, title }: { children: ReactNode; title: string }) {
